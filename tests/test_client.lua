@@ -88,7 +88,7 @@ context('NATS commands', function()
     end)
 
     test('* SUB (client:subscribe)', function()
-        local subject, callback = 'subject', function() print('callback') end
+        local subject, callback = 'subject', function(msg,inbox) print(msg) end
         local subscribe_id = client:subscribe(subject, callback)
 
         assert_true(subscribe_id ~= '')
@@ -104,7 +104,7 @@ context('NATS commands', function()
     end)
 
     test('* PUB (client:publish)', function()
-        local subject, payload = 'subject', 'payload'
+        local subject, payload = 'subject inbox', 'payload'
         client:publish(subject, payload)
 
         assert_equal(client.network.lwrite:sub(1,3), 'PUB')

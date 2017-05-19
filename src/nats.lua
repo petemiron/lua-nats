@@ -1,5 +1,5 @@
 local nats = {
-    _VERSION     = 'lua-nats 0.0.2',
+    _VERSION     = 'lua-nats 0.0.3',
     _DESCRIPTION = 'LUA client for NATS messaging system. https://nats.io',
     _COPYRIGHT   = 'Copyright (C) 2015 Eric Pinto',
 }
@@ -20,7 +20,7 @@ local client_prototype = {
     user          = nil,
     pass          = nil,
     lang          = 'lua',
-    version       = '0.0.2',
+    version       = '0.0.3',
     verbose       = false,
     pedantic      = false,
     trace         = false,
@@ -122,9 +122,11 @@ function response.read(client)
     local payload = client.network.read(client)
     local slices  = {}
     local data    = {}
+    local slice_count = 0
 
     for slice in payload:gmatch('[^%s]+') do
         table.insert(slices, slice)
+        slice_count = slice_count+1
     end
 
     -- PING
@@ -137,7 +139,13 @@ function response.read(client)
 
     -- MSG
     elseif slices[1] == 'MSG' then
-        local length = slices[4]
+        local length = 0
+	if slice_count == 4 then
+            length = slices[4]
+        else
+            data.inbox = slices[4]
+            length = slices[5]
+        end
 
         data.action    = 'MSG'
         data.subject   = slices[2]
@@ -370,7 +378,7 @@ function command.wait(client, quantity)
 
         elseif data.action == 'MSG' then
             count = count + 1
-            client.subscriptions[data.unique_id](data.content)
+            client.subscriptions[data.unique_id](data.content, data.inbox)
         end
     until quantity > 0 and count >= quantity
 end
